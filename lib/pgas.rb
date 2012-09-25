@@ -1,6 +1,6 @@
 module Pgas
-  autoload :DbManager, 'pgas/repository'
-  autoload :DbManager, 'pgas/db_manager'
+  autoload :DatabasesManager, 'pgas/databases_manager'
+  autoload :Database, 'pgas/database'
 
   class << self
     def connection_config
