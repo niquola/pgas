@@ -11,7 +11,7 @@ module Pgas
     end
 
     def comment
-      @comment || = get_comment
+      @comment ||= get_comment
     end
 
     def get_comment
