@@ -45,6 +45,15 @@ module Pgas
       get_connection(clone.database_name)
     end
 
+    def list_dumps
+    end
+
+    def dump(database_name, dump_id = nil)
+    end
+
+    def restore(dump_id, database_name)
+    end
+
     private
 
     def generate_name(prefix)

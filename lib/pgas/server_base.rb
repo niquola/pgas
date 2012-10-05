@@ -1,0 +1,2 @@
+class Pgas::ServerBase
+end

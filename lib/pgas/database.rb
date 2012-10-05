@@ -4,6 +4,24 @@ module Pgas
     attr_reader :connection
     attr_reader :comment
 
+    def self.all(connection)
+      connection.select_values('SELECT datname FROM pg_database').sort.map do |name|
+        self.new(connection,name)
+      end
+    end
+
+    def comment
+      @comment || = get_comment
+    end
+
+    def get_comment
+    end
+
+    #override equality
+    def ==(other)
+      other.database_name == database_name
+    end
+
     def initialize(connection, database_name, comment = nil)
       @connection = connection
       @database_name = database_name
@@ -20,7 +38,7 @@ module Pgas
       fail "Database #{database_name} not exists?" unless self.exists?
       fail "Database #{database_name} in use" if not force and  self.has_connections?
       self.close_connections if force
-      connection.execute "DROP DATABASE #{database_name};"
+      connection.execute %(DROP DATABASE "#{database_name}";)
     end
 
     def exists?
@@ -53,6 +71,14 @@ module Pgas
         SQL
     end
 
+    def clone(clone_name, comment = nil)
+      fail "Template database #{database_name} is being accessed" if self.has_connections?
+      connection.execute "CREATE DATABASE #{clone_name} WITH TEMPLATE #{database_name}"
+      connection.execute "COMMENT ON DATABASE #{clone_name} IS '#{comment}'" if comment
+
+      Database.new(connection, clone_name, comment)
+    end
+
     def close_connections
       self.prevent_connections
 
@@ -62,14 +88,6 @@ module Pgas
         WHERE procpid <> pg_backend_pid()
         AND datname = '#{database_name}'
       SQL
-    end
-
-    def clone(clone_name, comment = nil)
-      fail "Template database #{database_name} is being accessed" if self.has_connections?
-      connection.execute "CREATE DATABASE #{clone_name} WITH TEMPLATE #{database_name}"
-      connection.execute "COMMENT ON DATABASE #{clone_name} IS '#{comment}'" if comment
-
-      Database.new(connection, clone_name, comment)
     end
   end
 end
