@@ -34,6 +34,17 @@ module Pgas
       connection.execute "COMMENT ON DATABASE #{database_name} IS '#{comment}'" if comment
     end
 
+    def tables
+      connection.select_rows <<-SQL
+	select * from pg_catalog.pg_tables order by  tablename
+	SQL
+
+    end
+
+    def size
+      connection.select_value "select pg_size_pretty(pg_database_size('#{self.database_name}'))"
+    end
+
     def drop(force = false)
       fail "Database #{database_name} not exists?" unless self.exists?
       fail "Database #{database_name} in use" if not force and  self.has_connections?
@@ -71,6 +82,10 @@ module Pgas
         SQL
     end
 
+    def comment
+      @comment ||= connection.select_value "SELECT description FROM pg_shdescription WHERE objoid = (SELECT oid FROM pg_database WHERE datname = '#{self.database_name}')"
+    end
+
     def clone(clone_name, comment = nil)
       fail "Template database #{database_name} is being accessed" if self.has_connections?
       connection.execute "CREATE DATABASE #{clone_name} WITH TEMPLATE #{database_name}"
@@ -88,6 +103,10 @@ module Pgas
         WHERE procpid <> pg_backend_pid()
         AND datname = '#{database_name}'
       SQL
+    end
+
+    def to_yaml
+      Pgas.public_connection_config.merge('database'=> self.database_name).to_yaml
     end
   end
 end

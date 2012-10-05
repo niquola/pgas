@@ -1,0 +1,13 @@
+center
+  .offset2.span6.well
+    .page-header
+      h1 Login
+    form.form-horizontal method='POST' action='/login'
+      .control-group
+        label.control-label Username
+        .controls: input name='username'
+      .control-group
+        label.control-label Password
+        .controls: input name='password' type='password'
+      .form-actions
+        button.btn type='submit' Create

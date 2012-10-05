@@ -5,6 +5,7 @@ module Pgas
   autoload :DatabasesManager, 'pgas/databases_manager'
   autoload :Database, 'pgas/database'
   autoload :PgStatActivity, 'pgas/pg_stat_activity'
+  autoload :RestApi, 'pgas/rest_api'
 
   class << self
     def connection_config

@@ -1,0 +1,24 @@
+.row-fluid
+  .span3
+    .page-header: h1 Databases
+    ul.nav.nav-tabs.nav-stacked
+      - @databases.each do |database|
+        li: a href="databases/#{database.database_name}"= database.database_name
+  .span9
+    .page-header: h1 Create database
+    form.form-horizontal method='POST' action='/databases'
+      .control-group
+        label.control-label Database Name
+        .controls: input name='database_name'
+      .control-group
+        label.control-label Template database
+        .controls
+          select name='template'
+            option value='' no template
+            - @databases.each do |db|
+              option value=db.database_name = db.database_name
+      .control-group
+        label.control-label Comment
+        .controls: textarea name='comment'
+      .form-actions
+        button.btn type='submit' Create

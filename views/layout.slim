@@ -1,0 +1,25 @@
+doctype html
+html
+  head
+    title List of Databases
+    link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.1.1/css/bootstrap-combined.min.css" rel="stylesheet"
+    link href="//netdna.bootstrapcdn.com/font-awesome/2.0/css/font-awesome.css" rel="stylesheet"
+    css:
+      body { padding-top: 60px; padding-bottom: 40px; }
+  body
+    .navbar.navbar-inverse.navbar-fixed-top
+      .navbar-inner
+        .container-fluid
+          a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"
+            span class="icon-bar"
+            span class="icon-bar"
+            span class="icon-bar"
+          a class="brand" href="/" <b>Pgas</b>: <b>P</b>ost<b>G</b>resql <b>A</b>s <b>S</b>ervice
+          ul.nav.pull-right
+            li: a href="/logout" Logout
+    .container
+      - if flash[:notice]
+        .alert.alert-success= flash[:notice]
+      - if flash[:error]
+        .alert.alert-error= flash[:error]
+      == yield

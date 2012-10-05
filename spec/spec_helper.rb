@@ -10,6 +10,4 @@ rescue Bundler::GemNotFound => e
   exit!
 end if File.exist?(gemfile)
 $LOAD_PATH.unshift File.join(File.dirname(__FILE__),'..','lib')
-require 'pg'
-require 'active_record'
 require 'pgas'

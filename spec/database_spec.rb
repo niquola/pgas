@@ -10,11 +10,16 @@ describe Pgas::Database do
 
   it 'should create & drop database' do
     database = Pgas::Database.new(connection,'mydatabase', 'here is my comment')
+    database.drop if database.exists?
     database.create
     Model.establish_connection(config.merge('database'=> 'mydatabase'))
     Model.connection.execute('create table test ()')
     Pgas::Database.all(connection).should include(database)
     database.should have_connections
+    #database.tables.map(&:second).should include('test')
+    database.size.should_not be_nil
+    other_instance_database = Pgas::Database.new(connection,'mydatabase')
+    other_instance_database.comment.should == database.comment
 
     Model.connection_pool.disconnect!
 
