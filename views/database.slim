@@ -1,12 +1,18 @@
 .row
   .span9
     .page-header
-      h1 #{@database.database_name} <small> (#{@database.size})</small>
+      h1 #{@database.name} <small> (#{@database.size})</small>
     p= @database.comment
+    h2 Tables
+    table.table
+      - @database.tables.each do |row|
+        tr
+          - row.each do |cell|
+            td= cell
   .span3
     .well
       form.form-inline
         button.btn Clone
-      form.form-inline action="/databases/#{@database.database_name}" method="post"
+      form.form-inline action="/databases/#{@database.name}" method="post"
         div style="margin:0;padding:0": input name="_method" type="hidden" value="delete"
         button.btn.btn-danger onclick="confirm('Are u shure?')" Drop

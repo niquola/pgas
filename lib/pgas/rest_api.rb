@@ -18,13 +18,6 @@ class Pgas::RestApi < Sinatra::Application
     redirect '/' unless session[:username]
   end
 
-  def connection
-    @connection ||= begin
-                      cfg = Pgas.connection_config.merge('host'=>'localhost', 'username' => session[:username], 'password'=> session[:password])
-                      ActiveRecord::Base.postgresql_connection(cfg)
-                    end
-  end
-
   get '/' do
     slim :login
   end
@@ -34,6 +27,7 @@ class Pgas::RestApi < Sinatra::Application
     begin
     connection = ActiveRecord::Base.postgresql_connection(cfg)
     connection.execute 'select 1'
+    connection.disconnect!
     session[:username] = params[:username]
     session[:password] = params[:password]
     redirect '/databases'
@@ -50,12 +44,12 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   get '/databases' do
-    @databases = Pgas::Database.all(connection)
+    @databases = Pgas::Database.all
     slim :databases
   end
 
   get %r[/databases/([^.]+).?(.*)?] do |name, format|
-    @database = Pgas::Database.new(connection, name)
+    @database = Pgas::Database.new(name)
     case format
     when 'yml'
       [200, @database.to_yaml]
@@ -65,17 +59,17 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   post '/databases' do
-    name = params[:database_name].downcase
-    @database = Pgas::Database.new(connection,name,params[:comment])
+    name = params[:name].downcase
+    @database = Pgas::Database.new(name,params[:comment])
     @database.create
-    flash[:notice] = "Database #{@database.database_name} was created!"
-    redirect "/databases/#{@database.database_name}"
+    flash[:notice] = "Database #{@database.name} was created!"
+    redirect "/databases/#{@database.name}"
   end
 
   delete %r[/databases/([^.]+).?(.*)?] do |name, format|
-    @database = Pgas::Database.new(connection, name)
+    @database = Pgas::Database.new(name)
     @database.drop
-    flash[:notice] = "Database #{@database.database_name} was droped!"
+    flash[:notice] = "Database #{@database.name} was droped!"
     redirect "/databases"
   end
 end
