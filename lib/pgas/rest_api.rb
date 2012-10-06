@@ -78,4 +78,14 @@ class Pgas::RestApi < Sinatra::Application
     flash[:notice] = "Database #{@database.database_name} was droped!"
     redirect "/databases"
   end
+
+  get '/roles' do
+    @roles = Pgas::Role.all(connection)
+    slim :roles
+  end
+
+  get '/roles/:name' do
+    @role = Pgas::Role.new(connection, params[:name])
+    slim :role
+  end
 end

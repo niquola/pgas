@@ -1,0 +1,14 @@
+.row-fluid
+  .span3
+    .page-header: h1 roles
+    ul.nav.nav-tabs.nav-stacked
+      - @roles.each do |role|
+        li: a href="roles/#{role.name}"= role.name
+  .span9
+    .page-header: h1 Create Role
+    form.form-horizontal method='POST' action='/roles'
+      .control-group
+        label.control-label Role Name
+        .controls: input name='role_name'
+      .form-actions
+        button.btn type='submit' Create

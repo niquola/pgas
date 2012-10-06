@@ -1,0 +1,14 @@
+.row
+  .span9
+    .page-header
+      h1 #{@role.name}
+      table.table
+        - @role.attributes.each do |k,v|
+          tr
+            th= k.gsub(/^rol/,'')
+            td== v == 't' ? '&#x2713;' : v
+  .span3
+    .well
+      form.form-inline action="/roles/#{@role.name}" method="post"
+        div style="margin:0;padding:0": input name="_method" type="hidden" value="delete"
+        button.btn.btn-danger onclick="confirm('Are u shure?')" Drop

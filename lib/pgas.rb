@@ -2,8 +2,8 @@ require 'pg'
 require 'active_record'
 require 'active_record/connection_adapters/postgresql_adapter'
 module Pgas
-  autoload :DatabasesManager, 'pgas/databases_manager'
   autoload :Database, 'pgas/database'
+  autoload :Role, 'pgas/role'
   autoload :PgStatActivity, 'pgas/pg_stat_activity'
   autoload :RestApi, 'pgas/rest_api'
 
