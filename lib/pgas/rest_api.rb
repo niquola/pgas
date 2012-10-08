@@ -55,8 +55,13 @@ class Pgas::RestApi < Sinatra::Application
 
   def connection
     check_authentication
+    user_params = {}
+    if current_user.is_a? Hash
+      user_params[:username] = current_user[:username]
+      user_params[:password] = current_user[:password]
+    end
     @connection ||= begin
-                      cfg = Pgas.connection_config.merge('host'=>'localhost', 'username'=> current_user[:username], 'password'=> current_user[:password])
+                      cfg = Pgas.connection_config.merge({'host'=>'localhost'}).merge(user_params)
                       ActiveRecord::Base.postgresql_connection(cfg)
                     end
   end
@@ -144,7 +149,10 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   def check_authentication
-    warden_handler.authenticate(:hmac_header, scope: :hmac)
-    redirect '/' unless warden_handler.authenticated?
+    if request['Accept'] == 'application/json'
+      warden_handler.authenticate!(:hmac_header, scope: :hmac)
+    else
+      redirect '/' unless warden_handler.authenticated?
+    end
   end
 end
