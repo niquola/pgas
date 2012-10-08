@@ -1,4 +1,5 @@
 source :rubygems
+gem 'thin'
 gem 'rspec'
 gem 'thor'
 gem 'bunny'
