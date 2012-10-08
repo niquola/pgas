@@ -4,7 +4,7 @@ require 'slim'
 require "sinatra/reloader"
 require 'rack-flash'
 require 'warden'
-
+require 'hmac/strategies/header'
 
 class Pgas::RestApi < Sinatra::Application
   set :views, settings.root + '/../../views'
@@ -12,33 +12,40 @@ class Pgas::RestApi < Sinatra::Application
   use Rack::Flash
 
   use Warden::Manager do |manager|
-    manager.default_strategies :password
-    manager.failure_app = Pgas::RestApi
+    manager.default_strategies :hmac_header
+    manager.failure_app = -> env { [401, {"Content-Length" => "0"}, [""]] }
+
+    manager.scope_defaults(:hmac, :strategies => [:hmac_header],
+                           :store => false,
+                           :hmac => {
+                             :secret => Proc.new { |strategy| "foobar" },
+                             :auth_header_parse => /(?<scheme>[-_+.\w]+) (?<signature>[-_+.\w]+)/
+                           })
   end
 
-  Warden::Manager.before_failure do |env,opts|
-    env['REQUEST_METHOD'] = 'POST'
-  end
+  # Warden::Manager.before_failure do |env,opts|
+  #   env['REQUEST_METHOD'] = 'POST'
+  # end
 
-  Warden::Strategies.add(:password) do
-    def valid?
-      params["username"] || params["password"]
-    end
+  # Warden::Strategies.add(:password) do
+  #   def valid?
+  #     params["username"] || params["password"]
+  #   end
 
-    def authenticate!
-      username = params['username']
-      password = params['password']
-      cfg = Pgas.connection_config.merge('host' => 'localhost', 'username' => username, 'password'=> password)
-      begin
-	connection = ActiveRecord::Base.postgresql_connection(cfg)
-	connection.execute 'select 1'
-	user = { username: username, password: password }
-	success!(user)
-      rescue PG::Error => e
-	fail!(e.message)
-      end
-    end
-  end
+  #   def authenticate!
+  #     username = params['username']
+  #     password = params['password']
+  #     cfg = Pgas.connection_config.merge('host' => 'localhost', 'username' => username, 'password'=> password)
+  #     begin
+  #       connection = ActiveRecord::Base.postgresql_connection(cfg)
+  #       connection.execute 'select 1'
+  #       user = { username: username, password: password }
+  #       success!(user)
+  #     rescue PG::Error => e
+  #       fail!(e.message)
+  #     end
+  #   end
+  # end
 
   configure :development do
     register Sinatra::Reloader
@@ -48,10 +55,14 @@ class Pgas::RestApi < Sinatra::Application
   def connection
     check_authentication
     @connection ||= begin
-		      cfg = Pgas.connection_config.merge('host'=>'localhost', 'username'=> current_user[:username], 'password'=> current_user[:password])
-		      ActiveRecord::Base.postgresql_connection(cfg)
-		    end
+                      cfg = Pgas.connection_config.merge('host'=>'localhost', 'username'=> current_user[:username], 'password'=> current_user[:password])
+                      ActiveRecord::Base.postgresql_connection(cfg)
+                    end
   end
+
+  # before do
+  #   warden_handler.authenticate!(:scope => :hmac)
+  # end
 
   get '/' do
     slim :login
@@ -77,7 +88,14 @@ class Pgas::RestApi < Sinatra::Application
 
   get '/databases' do
     @databases = Pgas::Database.all(connection)
+
     slim :databases
+  end
+
+  get '/databases.json' do
+    [200, "OK"]
+    # @databases = Pgas::Database.all(connection)
+    # [200, @databases.inspect]
   end
 
   get %r[/databases/([^.]+).?(.*)?] do |name, format|

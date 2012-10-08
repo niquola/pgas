@@ -11,3 +11,5 @@ gem 'sinatra-contrib'
 gem 'slim'
 gem 'rack-flash3'
 gem 'warden'
+gem 'warden-hmac-authentication', :git => "git://github.com/gregory-m/warden-hmac-authentication.git"
+gem 'faraday'
