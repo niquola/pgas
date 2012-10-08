@@ -13,6 +13,12 @@ conn = Faraday.new(:url => "http://localhost:9292") do |builder|
   builder.adapter  :net_http
 end
 
-res = conn.get "/databases.json", 'Accept' => 'application/json'
-
-puts res.body
+puts '-'*100
+puts conn.get('/databases', {}, 'accept' => 'application/json').body
+puts '-'*100
+puts conn.get('/databases/postgres', {}, 'accept' => 'application/json').body
+puts '-'*100
+puts conn.get('/roles', {}, 'accept' => 'application/json').body
+puts '-'*100
+puts conn.get('/roles/postgres', {}, 'accept' => 'application/json').body
+puts '-'*100

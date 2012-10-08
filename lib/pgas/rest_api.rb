@@ -54,7 +54,6 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   def connection
-    check_authentication
     user_params = {}
     if current_user.is_a? Hash
       user_params[:username] = current_user[:username]
@@ -64,6 +63,14 @@ class Pgas::RestApi < Sinatra::Application
                       cfg = Pgas.connection_config.merge({'host'=>'localhost'}).merge(user_params)
                       ActiveRecord::Base.postgresql_connection(cfg)
                     end
+  end
+
+
+  before do
+    path = request.path_info
+    if path != '/' && path != '/login'
+      pass if check_authentication
+    end
   end
 
   get '/' do
@@ -90,22 +97,18 @@ class Pgas::RestApi < Sinatra::Application
 
   get '/databases' do
     @databases = Pgas::Database.all(connection)
-
-    slim :databases
+    case format
+    when :html then slim :databases
+    when :json then [200, @databases.to_json]
+    end
   end
 
-  get '/databases.json' do
-    @databases = Pgas::Database.all(connection)
-    [200, @databases.inspect]
-  end
-
-  get %r[/databases/([^.]+).?(.*)?] do |name, format|
+  get %r[/databases/([^.]+)] do |name|
+    puts "DB NAME #{name}"
     @database = Pgas::Database.new(connection, name)
     case format
-    when 'yml'
-      [200, @database.to_yaml]
-    else
-      slim :database
+    when :html then slim :database
+    when :json then [200, @database.to_json]
     end
   end
 
@@ -119,25 +122,39 @@ class Pgas::RestApi < Sinatra::Application
       @database = Pgas::Database.new(connection,name,comment)
       @database.create
     end
-    flash[:notice] = "Database #{@database.database_name} was created!"
-    redirect "/databases/#{@database.database_name}"
+    case format
+    when :html then
+      flash[:notice] = "Database #{@database.database_name} was created!"
+      redirect "/databases/#{@database.database_name}"
+    when :json then [201, @database.to_json]
+    end
   end
 
-  delete %r[/databases/([^.]+).?(.*)?] do |name, format|
+  delete %r[/databases/([^.]+)] do |name|
     @database = Pgas::Database.new(connection, name)
     @database.drop
-    flash[:notice] = "Database #{@database.database_name} was droped!"
-    redirect "/databases"
+    case format
+    when :html then
+      flash[:notice] = "Database #{@database.database_name} was droped!"
+      redirect "/databases"
+    when :json then [204]
+    end
   end
 
   get '/roles' do
     @roles = Pgas::Role.all(connection)
-    slim :roles
+    case format
+    when :html then slim :roles
+    when :json then [200, @roles.to_json]
+    end
   end
 
   get '/roles/:name' do
     @role = Pgas::Role.new(connection, params[:name])
-    slim :role
+    case format
+    when :html then slim :role
+    when :json then [200, @role.to_json]
+    end
   end
 
   def warden_handler
@@ -149,10 +166,21 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   def check_authentication
-    if request['Accept'] == 'application/json'
+    if format == :json
       warden_handler.authenticate!(:hmac_header, scope: :hmac)
     else
       redirect '/' unless warden_handler.authenticated?
     end
+  end
+
+  def format
+    case env['HTTP_ACCEPT'].split(',').first
+    when 'application/json' then :json
+    when 'text/html' then :html
+    end
+  end
+
+  def format?(type)
+    format == type
   end
 end

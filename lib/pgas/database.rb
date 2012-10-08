@@ -105,8 +105,16 @@ module Pgas
       SQL
     end
 
+    def public_connection
+      Pgas.public_connection_config.merge('database'=> self.database_name)
+    end
+
     def to_yaml
-      Pgas.public_connection_config.merge('database'=> self.database_name).to_yaml
+      public_connection.to_yaml
+    end
+
+    def as_json(*args)
+      { database_name: database_name, comment: comment, connection: public_connection }
     end
   end
 end

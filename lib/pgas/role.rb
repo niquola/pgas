@@ -13,11 +13,15 @@ module Pgas
     end
 
     def attributes
-      @attributes ||= @connection.send(:select,"select * from pg_roles where rolname = '#{self.name}'").first
+      @attributes ||= @connection.send(:select, "select * from pg_roles where rolname = '#{self.name}'").first
     end
 
     def exists?
       @connection.select_value("SELECT rolname FROM pg_roles WHERE rolname = '#{self.name}'") == name
+    end
+
+    def as_json(*args)
+      { name: name }
     end
   end
 end
