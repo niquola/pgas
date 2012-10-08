@@ -3,26 +3,54 @@ require 'rack'
 require 'slim'
 require "sinatra/reloader"
 require 'rack-flash'
+require 'warden'
+
 
 class Pgas::RestApi < Sinatra::Application
   set :views, settings.root + '/../../views'
   enable :sessions
   use Rack::Flash
 
+  use Warden::Manager do |manager|
+    manager.default_strategies :password
+    manager.failure_app = Pgas::RestApi
+  end
+
+  Warden::Manager.before_failure do |env,opts|
+    env['REQUEST_METHOD'] = 'POST'
+  end
+
+  Warden::Strategies.add(:password) do
+    def valid?
+      params["username"] || params["password"]
+    end
+
+    def authenticate!
+      username = params['username']
+      password = params['password']
+      cfg = Pgas.connection_config.merge('host' => 'localhost', 'username' => username, 'password'=> password)
+      begin
+	connection = ActiveRecord::Base.postgresql_connection(cfg)
+	connection.execute 'select 1'
+	user = { username: username, password: password }
+	success!(user)
+      rescue PG::Error => e
+	fail!(e.message)
+      end
+    end
+  end
+
   configure :development do
     register Sinatra::Reloader
     also_reload 'pgas/database'
   end
 
-  before '/databases/*' do
-    redirect '/' unless session[:username]
-  end
-
   def connection
+    check_authentication
     @connection ||= begin
-                      cfg = Pgas.connection_config.merge('host'=>'localhost', 'username' => session[:username], 'password'=> session[:password])
-                      ActiveRecord::Base.postgresql_connection(cfg)
-                    end
+		      cfg = Pgas.connection_config.merge('host'=>'localhost', 'username'=> current_user[:username], 'password'=> current_user[:password])
+		      ActiveRecord::Base.postgresql_connection(cfg)
+		    end
   end
 
   get '/' do
@@ -30,23 +58,21 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   post '/login' do
-    cfg = Pgas.connection_config.merge('host' => 'localhost', 'username' => params[:username], 'password'=> params[:password])
-    begin
-    connection = ActiveRecord::Base.postgresql_connection(cfg)
-    connection.execute 'select 1'
-    session[:username] = params[:username]
-    session[:password] = params[:password]
-    redirect '/databases'
-    rescue PG::Error => e
-      flash[:error] = e.message
-      redirect '/'
+    warden_handler.authenticate!
+    if warden_handler.authenticated?
+      redirect "/databases"
+    else
+      redirect "/"
     end
   end
 
   get '/logout' do
-    session[:username] = nil
-    session[:password] = nil
+    warden_handler.logout
     redirect '/'
+  end
+
+  post "/unauthenticated" do
+    redirect "/"
   end
 
   get '/databases' do
@@ -66,8 +92,14 @@ class Pgas::RestApi < Sinatra::Application
 
   post '/databases' do
     name = params[:database_name].downcase
-    @database = Pgas::Database.new(connection,name,params[:comment])
-    @database.create
+    template = params[:template].downcase
+    comment = params[:comment]
+    if template.present?
+      @database = Pgas::Database.new(connection,template).clone(name, comment)
+    else
+      @database = Pgas::Database.new(connection,name,comment)
+      @database.create
+    end
     flash[:notice] = "Database #{@database.database_name} was created!"
     redirect "/databases/#{@database.database_name}"
   end
@@ -87,5 +119,17 @@ class Pgas::RestApi < Sinatra::Application
   get '/roles/:name' do
     @role = Pgas::Role.new(connection, params[:name])
     slim :role
+  end
+
+  def warden_handler
+    env['warden']
+  end
+
+  def current_user
+    warden_handler.user
+  end
+
+  def check_authentication
+    redirect '/' unless warden_handler.authenticated?
   end
 end
