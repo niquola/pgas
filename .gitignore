@@ -5,3 +5,6 @@
 tags
 bin/
 *.swo
+config/public_connection.yml
+config/internal_connection.yml
+
