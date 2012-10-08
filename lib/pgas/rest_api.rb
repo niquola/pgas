@@ -12,14 +12,15 @@ class Pgas::RestApi < Sinatra::Application
   use Rack::Flash
 
   use Warden::Manager do |manager|
-    manager.default_strategies :hmac_header
+    manager.default_strategies [:password, :hmac_header]
     manager.failure_app = Pgas::RestApi
 
     manager.scope_defaults(:hmac, :strategies => [:hmac_header],
                            :store => false,
                            :hmac => {
-                             :secret => Proc.new { |strategy| "foobar" },
-                             :auth_header_parse => /(?<scheme>[-_+.\w]+) (?<signature>[-_+.\w]+)/
+                             :secret => ->(arg) {'secret'},
+                             :auth_header_parse => /(?<scheme>[-_+.\w]+) (?<auth_key>[-_+.\w]+) (?<signature>[-_+.\w]+)/,
+                             :auth_header_format => '%{auth_scheme} %{auth_key} %{signature}'
                            })
   end
 
@@ -60,16 +61,12 @@ class Pgas::RestApi < Sinatra::Application
                     end
   end
 
-  before do
-    warden_handler.authenticate!(:scope => :hmac)
-  end
-
   get '/' do
     slim :login
   end
 
   post '/login' do
-    warden_handler.authenticate!
+    warden_handler.authenticate!(:password)
     if warden_handler.authenticated?
       redirect "/databases"
     else
@@ -93,9 +90,8 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   get '/databases.json' do
-    [200, "OK"]
-    # @databases = Pgas::Database.all(connection)
-    # [200, @databases.inspect]
+    @databases = Pgas::Database.all(connection)
+    [200, @databases.inspect]
   end
 
   get %r[/databases/([^.]+).?(.*)?] do |name, format|
@@ -148,6 +144,7 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   def check_authentication
+    warden_handler.authenticate(:hmac_header, scope: :hmac)
     redirect '/' unless warden_handler.authenticated?
   end
 end
