@@ -13,7 +13,7 @@ class Pgas::RestApi < Sinatra::Application
 
   use Warden::Manager do |manager|
     manager.default_strategies :hmac_header
-    manager.failure_app = -> env { [401, {"Content-Length" => "0"}, [""]] }
+    manager.failure_app = Pgas::RestApi
 
     manager.scope_defaults(:hmac, :strategies => [:hmac_header],
                            :store => false,
@@ -23,29 +23,29 @@ class Pgas::RestApi < Sinatra::Application
                            })
   end
 
-  # Warden::Manager.before_failure do |env,opts|
-  #   env['REQUEST_METHOD'] = 'POST'
-  # end
+  Warden::Manager.before_failure do |env,opts|
+    env['REQUEST_METHOD'] = 'POST'
+  end
 
-  # Warden::Strategies.add(:password) do
-  #   def valid?
-  #     params["username"] || params["password"]
-  #   end
+  Warden::Strategies.add(:password) do
+    def valid?
+      params["username"] || params["password"]
+    end
 
-  #   def authenticate!
-  #     username = params['username']
-  #     password = params['password']
-  #     cfg = Pgas.connection_config.merge('host' => 'localhost', 'username' => username, 'password'=> password)
-  #     begin
-  #       connection = ActiveRecord::Base.postgresql_connection(cfg)
-  #       connection.execute 'select 1'
-  #       user = { username: username, password: password }
-  #       success!(user)
-  #     rescue PG::Error => e
-  #       fail!(e.message)
-  #     end
-  #   end
-  # end
+    def authenticate!
+      username = params['username']
+      password = params['password']
+      cfg = Pgas.connection_config.merge('host' => 'localhost', 'username' => username, 'password'=> password)
+      begin
+        connection = ActiveRecord::Base.postgresql_connection(cfg)
+        connection.execute 'select 1'
+        user = { username: username, password: password }
+        success!(user)
+      rescue PG::Error => e
+        fail!(e.message)
+      end
+    end
+  end
 
   configure :development do
     register Sinatra::Reloader
@@ -60,9 +60,9 @@ class Pgas::RestApi < Sinatra::Application
                     end
   end
 
-  # before do
-  #   warden_handler.authenticate!(:scope => :hmac)
-  # end
+  before do
+    warden_handler.authenticate!(:scope => :hmac)
+  end
 
   get '/' do
     slim :login
