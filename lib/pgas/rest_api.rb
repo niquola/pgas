@@ -104,11 +104,20 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   get %r[/databases/([^.]+)] do |name|
-    puts "DB NAME #{name}"
     @database = Pgas::Database.new(connection, name)
     case format
     when :html then slim :database
     when :json then [200, @database.to_json]
+    end
+  end
+
+  post %r[/databases/([^.\/]+/clone)] do |db_name|
+    @database = Pgas::Database.new(connection, db_name)
+    @cloned_database = @database.clone(params[:name], params[:comment])
+
+    case format
+    when :html then redirect "/databases/#{@cloned_database.database_name}"
+    when :json then [201, @cloned_database.to_json]
     end
   end
 
