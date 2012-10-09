@@ -10,9 +10,10 @@ conn = Faraday.new(:url => "http://localhost:9292") do |builder|
     :auth_key => 'TESTKEYID',
     :auth_header_format => '%{auth_scheme} %{auth_key} %{signature}'
   }
+
+  builder.request  :url_encoded
   builder.response :raise_error
   builder.adapter  :net_http
-  builder.request  :url_encoded
 end
 
 # puts '-'*100
@@ -26,8 +27,9 @@ end
 # puts '-'*100
 
 res = conn.post('/databases') do |req|
-  req.body = { :name => "foo3", :comment => "" }
+  req.body = { :database_name => "foo3", :comment => "" }
   req.headers["Accept"] = "application/json"
 end
+
 puts res.body
 puts '-'*100

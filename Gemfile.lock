@@ -1,8 +1,8 @@
 GIT
-  remote: git://github.com/gregory-m/warden-hmac-authentication.git
-  revision: 0063dd85eeefebcad54cadc2cf4b53be05705648
+  remote: git://github.com/Asquera/warden-hmac-authentication.git
+  revision: fa5195d358a00b849e3ef1db8855253787db5028
   specs:
-    warden-hmac-authentication (0.6.2)
+    warden-hmac-authentication (0.6.3)
       rack
       warden
 

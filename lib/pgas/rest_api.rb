@@ -123,7 +123,7 @@ class Pgas::RestApi < Sinatra::Application
 
   post '/databases' do
     name = params[:database_name].downcase
-    template = params[:template].downcase
+    template = params[:template].downcase if params[:template]
     comment = params[:comment]
     if template.present?
       @database = Pgas::Database.new(connection,template).clone(name, comment)
