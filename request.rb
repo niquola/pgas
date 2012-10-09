@@ -2,6 +2,7 @@
 
 require 'faraday'
 require 'faraday/request/hmac'
+require 'active_support/json'
 
 conn = Faraday.new(:url => "http://localhost:9292") do |builder|
   builder.use      Faraday::Request::Hmac, 'secret', {
@@ -11,14 +12,22 @@ conn = Faraday.new(:url => "http://localhost:9292") do |builder|
   }
   builder.response :raise_error
   builder.adapter  :net_http
+  builder.request  :url_encoded
 end
 
-puts '-'*100
-puts conn.get('/databases', {}, 'accept' => 'application/json').body
-puts '-'*100
-puts conn.get('/databases/postgres', {}, 'accept' => 'application/json').body
-puts '-'*100
-puts conn.get('/roles', {}, 'accept' => 'application/json').body
-puts '-'*100
-puts conn.get('/roles/postgres', {}, 'accept' => 'application/json').body
+# puts '-'*100
+# puts conn.get('/databases', {}, 'accept' => 'application/json').body
+# puts '-'*100
+# puts conn.get('/databases/postgres', {}, 'accept' => 'application/json').body
+# puts '-'*100
+# puts conn.get('/roles', {}, 'accept' => 'application/json').body
+# puts '-'*100
+# puts conn.get('/roles/postgres', {}, 'accept' => 'application/json').body
+# puts '-'*100
+
+res = conn.post('/databases') do |req|
+  req.body = { :name => "foo3", :comment => "" }
+  req.headers["Accept"] = "application/json"
+end
+puts res.body
 puts '-'*100
