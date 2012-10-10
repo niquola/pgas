@@ -111,7 +111,7 @@ class Pgas::RestApi < Sinatra::Application
     end
   end
 
-  post %r[/databases/([^.\/]+/clone)] do |db_name|
+  post %r[/databases/([^.\/]+)/clone] do |db_name|
     @database = Pgas::Database.new(connection, db_name)
     @cloned_database = @database.clone(params[:name], params[:comment])
 
