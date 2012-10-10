@@ -140,8 +140,9 @@ class Pgas::RestApi < Sinatra::Application
   end
 
   delete %r[/databases/([^.]+)] do |name|
+    force = params[:force] || false
     @database = Pgas::Database.new(connection, name)
-    @database.drop
+    @database.drop(force)
     case format
     when :html then
       flash[:notice] = "Database #{@database.database_name} was droped!"

@@ -2,3 +2,5 @@ port: 5555
 host: /home/nicola/pg
 adapter: 'postgresql'
 database: postgres
+username: 'postgers'
+password:
